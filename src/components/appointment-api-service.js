@@ -1,17 +1,17 @@
 import { ModalService } from './modal-service.js';
 
-export class APIService {
+export class AppointmentAPIService {
     constructor() {
         this.apiUrl = 'https://ta35.wms.ocs.oraclecloud.com:443/grupocice_test/wms/api/init_stage_interface/';
         this.apiAuth = 'Basic bG9nZmlyZTpHcnVwb2NpY2UyMDI0';
         this.modal = new ModalService();
     }
 
-    async sendShipment(headerData, itemLinesData) {
+    async sendAppointment(appointmentData) {
         try {
-            const xmlPayload = this.buildXMLPayload(headerData, itemLinesData);
+            const xmlPayload = this.buildAppointmentXMLPayload(appointmentData);
             const bodyParams = new URLSearchParams({
-                'entity': 'ib_shipment',
+                'entity': 'appointment',
                 'xml_data': xmlPayload
             });
 
@@ -44,27 +44,12 @@ export class APIService {
         }
     }
 
-    buildXMLPayload(headerData, itemLinesData) {
+    buildAppointmentXMLPayload(appointmentData) {
         const now = new Date();
         const timestamp = now.toISOString().slice(0, 19);
         
-        const itemDetailsXML = itemLinesData.map((item, index) => {
-            const expiry_date = item.expiry_date ? 
-                new Date(item.expiry_date).toLocaleDateString('en-GB') : '';
-            
-            return `
-                <ib_shipment_dtl>
-                    <seq_nbr>${index + 1}</seq_nbr>
-                    <action_code>CREATE</action_code>
-                    <lpn_nbr>${item.lpn_nbr || ''}</lpn_nbr>
-                    <item_part_a>${item.item_part_a || ''}</item_part_a>
-                    <shipped_qty>${item.shipped_qty || ''}</shipped_qty>
-                    <expiry_date>${expiry_date || ''}</expiry_date>
-                    <batch_nbr>${item.batch_nbr || ''}</batch_nbr>
-                    <uom_code>UNITS</uom_code>
-                </ib_shipment_dtl>
-            `;
-        }).join('');
+        // Combine arrival date and time into ISO format
+        const plannedStartTs = this.formatPlannedStartTime(appointmentData.shipped_date, appointmentData.arrival_time);
 
         return `<?xml version="1.0" encoding="utf-8"?>
 <LgfData>
@@ -73,26 +58,34 @@ export class APIService {
         <OriginSystem>Host</OriginSystem>
         <ClientEnvCode>QA</ClientEnvCode>
         <ParentCompanyCode>QATCTPC</ParentCompanyCode>
-        <Entity>ib_shipment</Entity>
+        <Entity>appointment</Entity>
         <TimeStamp>${timestamp}</TimeStamp>
-        <MessageId>InboundShipment</MessageId>
+        <MessageId>str1234</MessageId>
     </Header>
-    <ListOfIbShipments>
-        <ib_shipment>
-            <ib_shipment_hdr>
-                <shipment_nbr>${headerData.shipment_nbr}</shipment_nbr>
-                <facility_code>${headerData.facility_code}</facility_code>
-                <company_code>${headerData.company_code}</company_code>
-                <action_code>CREATE</action_code>
-                <shipment_type>ENT</shipment_type>
-                <load_nbr>${headerData.shipment_nbr}</load_nbr>
-                <manifest_nbr>${headerData.manifest_nbr}</manifest_nbr>
-                <shipped_date>${headerData.shipped_date}</shipped_date>
-                <cust_field_1>${headerData.cust_field_1}</cust_field_1>
-            </ib_shipment_hdr>
-            ${itemDetailsXML}
-        </ib_shipment>
-    </ListOfIbShipments>
+    <ListOfAppointments>
+        <appointment>
+             <facility_code>${appointmentData.facility_code}</facility_code>
+                <company_code>${appointmentData.company_code}</company_code>
+            <appt_nbr>${appointmentData.shipment_nbr}</appt_nbr>
+            <load_nbr>${appointmentData.shipment_nbr}</load_nbr>
+            <dock_type>ENT</dock_type>
+            <action_code>CREATE</action_code>
+            <preferred_dock_nbr></preferred_dock_nbr>
+            <planned_start_ts>${plannedStartTs}</planned_start_ts>
+            <duration>${appointmentData.unload_duration}</duration>
+            <estimated_units></estimated_units>
+            <carrier_info></carrier_info>
+            <trailer_nbr></trailer_nbr>
+            <load_type></load_type>
+        </appointment>
+    </ListOfAppointments>
 </LgfData>`;
+    }
+
+    formatPlannedStartTime(shipped_date, arrivalTime) {
+        // shippedDate is in YYYY-MM-DD format
+        // arrivalTime is in HH:MM format (24hrs)
+        // Return format: YYYY-MM-DDTHH:MM:00
+        return `${shipped_date}T${arrivalTime}:00`;
     }
 }
