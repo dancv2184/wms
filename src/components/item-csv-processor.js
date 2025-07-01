@@ -132,12 +132,18 @@ export class ItemCSVProcessor {
             max_case_qty: row.max_case_qty,
             lpns_per_tier: row.lpns_per_tier,
             tiers_per_pallet: row.tiers_per_pallet,
-            req_batch_nbr_flg: row.req_batch_nbr_flg === 'yes' || row.req_batch_nbr_flg === 'true' || row.req_batch_nbr_flg === '1' ? 'yes' : '',
+            req_batch_nbr_flg: this.normalizeYesNo(row.req_batch_nbr_flg),
             product_life: row.product_life,
             description_2: row.description_2,
             description_3: row.description_3,
             primary_uom_code: row.primary_uom_code,
             pack_uom_code: row.pack_uom_code
         }));
+    }
+
+    normalizeYesNo(value) {
+        if (!value) return '';
+        const normalizedValue = value.toString().toLowerCase().trim();
+        return (normalizedValue === 'yes' || normalizedValue === 'true' || normalizedValue === '1' || normalizedValue === 'si' || normalizedValue === 'sí') ? 'yes' : '';
     }
 }
