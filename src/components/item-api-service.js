@@ -2,7 +2,7 @@ import { ModalService } from './modal-service.js';
 
 export class ItemAPIService {
     constructor() {
-        this.apiUrl = 'https://ta35.wms.ocs.oraclecloud.com:443/grupocice/wms/api/init_stage_interface/';
+        this.apiUrl = 'https://ta35.wms.ocs.oraclecloud.com:443/grupocice_test/wms/api/init_stage_interface/';
         this.apiAuth = 'Basic bG9nZmlyZTpHcnVwb2NpY2UyMDI0';
         this.modal = new ModalService();
     }
